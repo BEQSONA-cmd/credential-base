@@ -1,13 +1,12 @@
 export type CredentialField = {
     id: string;
-    label: string;
     value: string;
-    type: 'text' | 'password' | 'multiline';
+    type: 'email' | 'password' | 'text';
 };
 
 export type Credential = {
     id: string;
     name: string;
-    createdAt: number;
+    createdAt: Date;
     fields: CredentialField[];
 };

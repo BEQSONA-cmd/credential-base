@@ -1,158 +1,181 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Modal, Alert, ActivityIndicator } from 'react-native';
+import { View, Modal, Pressable } from 'react-native';
 import { storage } from '../utils/storage';
-import { Credential } from '../types';
-import CredentialsList from '../components/CredentialsList';
-import CredentialForm from '../components/CredentialForm';
-import CredentialDetail from '../components/CredentialDetail';
 import Onboarding from '../components/Onboarding';
+import { useStatic } from '../components/shared/useStatic';
+import { Credential } from '../types';
+import { Text, TextInput, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
-export default function HomePage() {
-    const [credentials, setCredentials] = useState<Credential[]>([]);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [selectedCredential, setSelectedCredential] = useState<Credential | null>(null);
-    const [editingCredential, setEditingCredential] = useState<Credential | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [showOnboarding, setShowOnboarding] = useState(false);
-    const [storageError, setStorageError] = useState<string | null>(null);
+import { TouchableOpacity, FlatList } from 'react-native';
 
-    useEffect(() => {
-        initializeApp();
-    }, []);
 
-    const initializeApp = async () => {
-        try {
-            // Check if this is first launch
-            const isFirstLaunch = await storage.isFirstLaunch();
+export function CredentialsList({ credentialList }: { credentialList: Credential[] }) {
+    const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
 
-            if (isFirstLaunch) {
-                setShowOnboarding(true);
-                setIsLoading(false);
-                return;
-            }
-
-            // Try to load credentials
-            await loadCredentials();
-        } catch (error) {
-            console.error('Failed to initialize:', error);
-            setStorageError('Failed to initialize storage. Please restart the app.');
-            setIsLoading(false);
-        }
+    const onSelect = (credential: Credential) => {
+        Alert.alert('Credential Details', `Name: ${credential.name}\nCreated: ${new Date(credential.createdAt).toLocaleDateString()}\nFields: ${credential.fields.length}`);
     };
 
-    const loadCredentials = async () => {
-        setIsLoading(true);
-        try {
-            const data = await storage.getAll();
-            setCredentials(data);
-            setStorageError(null);
-        } catch (error) {
-            console.error('Error loading credentials:', error);
-            setStorageError('Failed to load credentials. Please try again.');
-        } finally {
-            setIsLoading(false);
-        }
+    const onEdit = (credential: Credential) => {
+        Alert.alert('Edit Credential', `This would open the edit screen for "${credential.name}".`);
     };
-
-    const handleSaveCredential = async (credential: Credential) => {
-        let success;
-        if (editingCredential) {
-            success = await storage.update(credential.id, credential);
-        } else {
-            success = await storage.add(credential);
-        }
-
-        if (success) {
-            await loadCredentials();
-            setModalVisible(false);
-            setEditingCredential(null);
-        }
-    };
-
-    const handleDeleteCredential = async (id: string) => {
+    const onDelete = async (id: string) => {
         Alert.alert(
             'Delete Credential',
             'Are you sure you want to delete this credential?',
             [
                 { text: 'Cancel', style: 'cancel' },
                 {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        const success = await storage.delete(id);
-                        if (success) {
-                            await loadCredentials();
-                            if (selectedCredential?.id === id) {
-                                setSelectedCredential(null);
-                            }
-                        }
+                    text: 'Delete', style: 'destructive', onPress: async () => {
+                        await storage.delete(id);
+                        setCredentials(credentials.filter(c => c.id !== id));
                     }
                 }
             ]
         );
+    }
+
+    const handleLongPress = (credential: Credential) => {
+        Alert.alert(
+            'Manage Credential',
+            `What would you like to do with "${credential.name}"?`,
+            [
+                { text: 'View', onPress: () => onSelect(credential) },
+                { text: 'Edit', onPress: () => onEdit(credential) },
+                { text: 'Delete', onPress: () => onDelete(credential.id), style: 'destructive' },
+                { text: 'Cancel', style: 'cancel' }
+            ]
+        );
     };
 
-    const handleOnboardingContinue = async () => {
-        setShowOnboarding(false);
+    const renderItem = ({ item }: { item: Credential }) => (
+        <TouchableOpacity
+            onPress={() => onSelect(item)}
+            onLongPress={() => handleLongPress(item)}
+            className="bg-white p-4 mb-2 rounded-lg shadow-sm border border-gray-200"
+        >
+            <View className="flex-row justify-between items-center">
+                <View>
+                    <Text className="text-lg font-bold text-gray-800">{item.name}</Text>
+                    <Text className="text-sm text-gray-500">
+                        {new Date(item.createdAt).toLocaleDateString()} • {item.fields.length} fields
+                    </Text>
+                </View>
+                <Text className="text-blue-500 text-xs">Tap to view</Text>
+            </View>
+        </TouchableOpacity>
+    );
 
-        // Mark as initialized
-        await storage.markInitialized();
+    return (
+        <FlatList
+            data={credentialList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())}
+            renderItem={renderItem}
+            keyExtractor={item => item.id}
+            contentContainerClassName="p-4"
+            ListEmptyComponent={
+                <View className="flex-1 items-center justify-center py-20">
+                    <Text className="text-gray-400 text-lg">No credentials yet</Text>
+                    <Text className="text-gray-400">Tap + to add your first credential</Text>
+                </View>
+            }
+        />
+    );
+}
 
-        // Add a welcome credential
-        const welcomeCredential: Credential = {
-            id: 'welcome-' + Date.now(),
-            name: 'Welcome to PassVault!',
-            createdAt: Date.now(),
-            fields: [
-                {
-                    id: '1',
-                    label: 'Getting Started',
-                    value: 'Tap the + button to add your first credential',
-                    type: 'text'
-                },
-                {
-                    id: '2',
-                    label: 'Features',
-                    value: '• Add custom fields\n• Search credentials\n• Export data\n• All stored locally',
-                    type: 'multiline'
-                }
-            ]
-        };
+function AddCredentialModal() {
+    const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
+    const [modalVisible, setModalVisible] = useStatic('addModalVisible', false);
+    const [name, setName] = useState('');
+    const [fields, setFields] = useState<Credential['fields']>([
+        { id: Date.now().toString(), value: '', type: 'email' },
+        { id: (Date.now() + 1).toString(), value: '', type: 'password' }
+    ]);
 
-        const success = await storage.add(welcomeCredential);
-        if (success) {
-            await loadCredentials();
+    const handleAddField = () => {
+        setFields([...fields, { id: Date.now().toString(), value: '', type: 'text' }]);
+    };
+
+    const updateField = (id: string, key: 'type' | 'value', value: string) => {
+        setFields(fields.map(f => f.id === id ? { ...f, [key]: value } : f));
+    };
+
+    const handleSave = async () => {
+        if (name.trim() && fields.every(f => f.value.trim())) {
+            const credential: Credential = {
+                id: Date.now().toString(),
+                name,
+                createdAt: new Date(),
+                fields
+            };
+            await storage.add(credential);
+            setCredentials([...credentials, credential]);
+            setName('');
+            setFields([]);
+            setModalVisible(false);
+        } else {
+            Alert.alert('Error', 'Fill all fields');
         }
     };
 
-    const handleRetry = () => {
-        setStorageError(null);
-        setIsLoading(true);
-        initializeApp();
+    return (
+        <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
+            <View className="p-5 flex-1">
+                <Text className="text-l font-bold mb-4">Credential Name:</Text>
+                <TextInput
+                    placeholder="Credential Name"
+                    value={name}
+                    onChangeText={setName}
+                    className="border p-2.5 mb-5"
+                />
+
+                {fields.map(field => (
+                    <View key={field.id} className="mb-4">
+                        <Picker
+                            selectedValue={field.type}
+                            onValueChange={value => updateField(field.id, 'type', value)}
+                        >
+                            <Picker.Item label="Email" value="email" />
+                            <Picker.Item label="Password" value="password" />
+                            <Picker.Item label="Text" value="text" />
+                        </Picker>
+                        <TextInput
+                            placeholder={`Enter ${field.type}`}
+                            value={field.value}
+                            onChangeText={value => updateField(field.id, 'value', value)}
+                            secureTextEntry={field.type === 'password'}
+                            className="border p-2.5 mt-1"
+                        />
+                    </View>
+                ))}
+
+                <Pressable onPress={handleAddField} className="bg-blue-500 p-2.5 mb-2.5">
+                    <Text className="text-white">Add Field</Text>
+                </Pressable>
+                <Pressable onPress={handleSave} className="bg-green-500 p-2.5">
+                    <Text className="text-white">Save</Text>
+                </Pressable>
+            </View>
+        </Modal>
+    );
+}
+
+export default function HomePage() {
+    const [credentials, setCredentials] = useStatic<Credential[]>('credentials', []);
+    const [showOnboarding, setShowOnboarding] = useState(true);
+
+    const handleOnboardingContinue = async () => {
+        setShowOnboarding(false);
+        await storage.markInitialized();
     };
 
-    if (storageError) {
-        return (
-            <View className="flex-1 items-center justify-center bg-white p-4">
-                <Text className="text-red-500 text-lg mb-4 text-center">{storageError}</Text>
-                <TouchableOpacity
-                    onPress={handleRetry}
-                    className="bg-blue-600 px-6 py-3 rounded-lg"
-                >
-                    <Text className="text-white font-bold">Retry</Text>
-                </TouchableOpacity>
-            </View>
-        );
-    }
-
-    if (isLoading) {
-        return (
-            <View className="flex-1 items-center justify-center bg-white">
-                <ActivityIndicator size="large" color="#3b82f6" />
-                <Text className="mt-4 text-gray-600">Loading your vault...</Text>
-            </View>
-        );
-    }
+    useEffect(() => {
+        const loadCredentials = async () => {
+            const creds = await storage.getAll();
+            setCredentials(creds);
+        };
+        loadCredentials();
+    }, []);
 
     return (
         <View className="flex-1 bg-gray-50">
@@ -161,61 +184,13 @@ export default function HomePage() {
                 onContinue={handleOnboardingContinue}
             />
 
-            {selectedCredential ? (
-                <CredentialDetail
-                    credential={selectedCredential}
-                    onBack={() => setSelectedCredential(null)}
-                    onEdit={() => {
-                        setEditingCredential(selectedCredential);
-                        setSelectedCredential(null);
-                        setModalVisible(true);
-                    }}
-                    onDelete={() => {
-                        handleDeleteCredential(selectedCredential.id);
-                        setSelectedCredential(null);
-                    }}
+            {!showOnboarding && (
+                <CredentialsList
+                    credentialList={credentials}
                 />
-            ) : (
-                <>
-                    <CredentialsList
-                        credentials={credentials}
-                        onSelect={setSelectedCredential}
-                        onDelete={handleDeleteCredential}
-                        onEdit={(cred) => {
-                            setEditingCredential(cred);
-                            setModalVisible(true);
-                        }}
-                    />
-
-                    <TouchableOpacity
-                        onPress={() => {
-                            setEditingCredential(null);
-                            setModalVisible(true);
-                        }}
-                        className="absolute bottom-6 right-6 bg-blue-600 w-14 h-14 rounded-full items-center justify-center shadow-lg"
-                    >
-                        <Text className="text-white text-3xl">+</Text>
-                    </TouchableOpacity>
-                </>
             )}
 
-            <Modal
-                visible={modalVisible}
-                animationType="slide"
-                onRequestClose={() => {
-                    setModalVisible(false);
-                    setEditingCredential(null);
-                }}
-            >
-                <CredentialForm
-                    onSave={handleSaveCredential}
-                    onCancel={() => {
-                        setModalVisible(false);
-                        setEditingCredential(null);
-                    }}
-                    initialData={editingCredential || undefined}
-                />
-            </Modal>
+            <AddCredentialModal />
         </View>
     );
 }

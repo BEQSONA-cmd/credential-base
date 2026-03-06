@@ -3,7 +3,7 @@ import { View, Text } from 'react-native';
 export default function Header() {
     return (
         <View className="bg-blue-600 p-4 shadow-lg">
-            <Text className="text-white text-2xl font-bold text-center">
+            <Text className="text-white mt-10 text-2xl font-bold text-center">
                 PassVault 🔐
             </Text>
         </View>

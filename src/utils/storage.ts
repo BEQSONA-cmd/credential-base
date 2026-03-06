@@ -22,10 +22,8 @@ class StorageService {
             await AsyncStorage.removeItem('__test');
 
             this.isAvailable = value === 'test';
-            console.log('AsyncStorage available:', this.isAvailable);
             return this.isAvailable;
         } catch (error) {
-            console.log('AsyncStorage not available:', error);
             this.isAvailable = false;
             return false;
         }
@@ -52,7 +50,6 @@ class StorageService {
         const available = await this.checkAvailability();
 
         if (!available) {
-            console.warn('AsyncStorage is not available');
             Alert.alert(
                 'Storage Error',
                 'Unable to access device storage. Please make sure you have granted storage permissions and try restarting the app.'
@@ -64,7 +61,6 @@ class StorageService {
             const data = await AsyncStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
         } catch (error) {
-            console.error('Error loading credentials:', error);
             Alert.alert(
                 'Error',
                 'Failed to load credentials. Please try again.'
@@ -93,26 +89,6 @@ class StorageService {
             return saved === jsonValue;
         } catch (error) {
             console.error('Error saving credentials:', error);
-
-            // More specific error message based on error type
-            if (error instanceof Error) {
-                if (error.message.includes('quota')) {
-                    Alert.alert(
-                        'Storage Full',
-                        'Your device storage is full. Please free up some space and try again.'
-                    );
-                } else {
-                    Alert.alert(
-                        'Error',
-                        `Failed to save credentials: ${error.message}`
-                    );
-                }
-            } else {
-                Alert.alert(
-                    'Error',
-                    'Failed to save credentials. Please try again.'
-                );
-            }
             return false;
         }
     }
