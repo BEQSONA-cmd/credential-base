@@ -6,6 +6,65 @@ import { storage } from '../utils/storage';
 import { useStatic } from './shared/useStatic';
 import { Credential } from '../types';
 
+interface AddFieldProps {
+    field: Credential['fields'][0];
+    updateField: (id: string, key: 'type' | 'value', value: string) => void;
+    removeField: (id: string) => void;
+}
+
+export function AddField({ field, updateField, removeField }: AddFieldProps) {
+    const getFieldIcon = (type: string) => {
+        switch (type) {
+            case 'email': return 'mail-outline';
+            case 'password': return 'lock-closed-outline';
+            default: return 'document-text-outline';
+        }
+    };
+    return (
+        <View key={field.id} className="mb-4 bg-white rounded-xl border border-gray-200 p-4">
+            <View className="flex-row items-center mb-3">
+                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
+                    <Ionicons name={getFieldIcon(field.type)} size={16} color="#3B82F6" />
+                </View>
+                <View className="flex-1 flex-row">
+                    {['text', 'email', 'password'].map((type) => (
+                        <TouchableOpacity
+                            key={type}
+                            onPress={() => updateField(field.id, 'type', type)}
+                            className={`mr-2 px-3 py-1 rounded-full ${field.type === type
+                                ? 'bg-blue-500'
+                                : 'bg-gray-100'
+                                }`}
+                        >
+                            <Text className={`text-xs capitalize ${field.type === type
+                                ? 'text-white'
+                                : 'text-gray-600'
+                                }`}>
+                                {type}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <TouchableOpacity
+                    onPress={() => removeField(field.id)}
+                    className="w-8 h-8 items-center justify-center"
+                >
+                    <Ionicons name="trash-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
+            </View>
+
+            <TextInput
+                placeholder={`Enter ${field.type}`}
+                value={field.value}
+                onChangeText={value => updateField(field.id, 'value', value)}
+                secureTextEntry={field.type === 'password'}
+                className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-base text-gray-800"
+                placeholderTextColor="#9CA3AF"
+            />
+        </View>
+    );
+}
+
 export default function AddCredentialModal() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
     const [modalVisible, setModalVisible] = useStatic('addModalVisible', false);
@@ -63,14 +122,6 @@ export default function AddCredentialModal() {
         }
     }, [modalVisible]);
 
-    const getFieldIcon = (type: string) => {
-        switch (type) {
-            case 'email': return 'mail-outline';
-            case 'password': return 'lock-closed-outline';
-            default: return 'document-text-outline';
-        }
-    };
-
     return (
         <Modal
             visible={modalVisible}
@@ -112,49 +163,12 @@ export default function AddCredentialModal() {
                     </Text>
 
                     {fields.map((field, index) => (
-                        <View key={field.id} className="mb-4 bg-white rounded-xl border border-gray-200 p-4">
-                            <View className="flex-row items-center mb-3">
-                                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
-                                    <Ionicons name={getFieldIcon(field.type)} size={16} color="#3B82F6" />
-                                </View>
-                                <View className="flex-1 flex-row">
-                                    {['text', 'email', 'password'].map((type) => (
-                                        <TouchableOpacity
-                                            key={type}
-                                            onPress={() => updateField(field.id, 'type', type)}
-                                            className={`mr-2 px-3 py-1 rounded-full ${field.type === type
-                                                ? 'bg-blue-500'
-                                                : 'bg-gray-100'
-                                                }`}
-                                        >
-                                            <Text className={`text-xs capitalize ${field.type === type
-                                                ? 'text-white'
-                                                : 'text-gray-600'
-                                                }`}>
-                                                {type}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                                {fields.length > 1 && (
-                                    <TouchableOpacity
-                                        onPress={() => removeField(field.id)}
-                                        className="w-8 h-8 items-center justify-center"
-                                    >
-                                        <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-
-                            <TextInput
-                                placeholder={`Enter ${field.type}`}
-                                value={field.value}
-                                onChangeText={value => updateField(field.id, 'value', value)}
-                                secureTextEntry={field.type === 'password'}
-                                className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-base text-gray-800"
-                                placeholderTextColor="#9CA3AF"
-                            />
-                        </View>
+                        <AddField
+                            key={field.id}
+                            field={field}
+                            updateField={updateField}
+                            removeField={removeField}
+                        />
                     ))}
 
                     {/* Add Field Button */}

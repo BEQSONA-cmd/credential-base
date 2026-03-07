@@ -1,12 +1,105 @@
-import { Text, TouchableOpacity, View, ScrollView, Alert } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, Alert, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { storage } from '../../utils/storage';
 import { Credential } from '../../types';
+import { useStatic } from '../../components/shared/useStatic';
 
-function CredentialField({ field, index, credential }: { field: Credential['fields'][0], index: number, credential: Credential }) {
+interface CredentialFieldProps {
+    field: Credential['fields'][0];
+    index: number;
+    credential: Credential;
+}
+
+function EditingCredentialField({ field, index, credential }: CredentialFieldProps) {
+    const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
+    const [value, setValue] = useState(field.value);
+    const [selectedType, setSelectedType] = useState(field.type);
+    const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields');
+
+    const handleSave = async () => {
+        const updatedCredential = {
+            ...credential,
+            fields: credential.fields.map(f =>
+                f.id === field.id ? { ...f, value, type: selectedType } : f
+            )
+        };
+        await storage.update(credential.id, updatedCredential);
+        setIsEditing(prev => ({ ...prev, [field.id]: false }));
+        setCredentials(credentials.map(c => c.id === credential.id ? updatedCredential : c));
+    };
+
+    const handleCancel = () => {
+        setValue(field.value);
+        setSelectedType(field.type);
+        setIsEditing(prev => ({ ...prev, [field.id]: false }));
+    };
+
+    const getFieldIcon = (type: string) => {
+        switch (type) {
+            case 'email': return 'mail-outline';
+            case 'password': return 'lock-closed-outline';
+            default: return 'document-text-outline';
+        }
+    };
+
+    return (
+        <View key={field.id} className="bg-white rounded-xl border border-gray-200 p-4">
+            <View className="flex-row items-center mb-3">
+                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
+                    <Ionicons name={getFieldIcon(selectedType)} size={16} color="#3B82F6" />
+                </View>
+                <View className="flex-1 flex-row">
+                    {(['text', 'email', 'password'] as const).map((type) => (
+                        <TouchableOpacity
+                            key={type}
+                            onPress={() => setSelectedType(type)}
+                            className={`mr-2 px-3 py-1 rounded-full ${selectedType === type
+                                ? 'bg-blue-500'
+                                : 'bg-gray-100'
+                                }`}
+                        >
+                            <Text className={`text-xs capitalize ${selectedType === type
+                                ? 'text-white'
+                                : 'text-gray-600'
+                                }`}>
+                                {type}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+                <TouchableOpacity
+                    onPress={handleCancel}
+                    className="w-8 h-8 items-center justify-center"
+                >
+                    <Ionicons name="close-outline" size={18} color="#EF4444" />
+                </TouchableOpacity>
+            </View>
+
+            <View className="flex-row items-center">
+                <TextInput
+                    placeholder={`Enter ${selectedType}`}
+                    value={value}
+                    onChangeText={setValue}
+                    secureTextEntry={selectedType === 'password'}
+                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-base text-gray-800"
+                    placeholderTextColor="#9CA3AF"
+                />
+                <TouchableOpacity
+                    onPress={handleSave}
+                    className="ml-3 w-8 h-8 items-center justify-center rounded-full bg-green-50"
+                >
+                    <Ionicons name="checkmark-outline" size={20} color="#10B981" />
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+}
+
+function CredentialField({ field, index, credential }: CredentialFieldProps) {
     const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
+    const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields');
     const togglePassword = (fieldId: string) => {
         setShowPassword(prev => ({ ...prev, [fieldId]: !prev[fieldId] }));
     };
@@ -16,7 +109,7 @@ function CredentialField({ field, index, credential }: { field: Credential['fiel
     };
 
     const handleEdit = () => {
-        Alert.alert('Edit Field', 'Edit functionality coming soon!');
+        setIsEditing(prev => ({ ...prev, [field.id]: true }));
     }
 
     const getIconName = (type: string) => {
@@ -81,22 +174,11 @@ function CredentialField({ field, index, credential }: { field: Credential['fiel
 
 export default function CredentialPage() {
     const router = useRouter();
+    const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
     const params = useLocalSearchParams<{ id?: string }>();
     const [credential, setCredential] = useState<Credential | null>(null);
-
-    useEffect(() => {
-        async function getCredential() {
-            if (params.id) {
-                const newCredential = await storage.get(params.id);
-                if (newCredential != null) {
-                    setCredential(newCredential);
-                } else {
-                    router.back();
-                }
-            }
-        }
-        getCredential();
-    }, [params.id]);
+    const [fields, setFields] = useState<Credential['fields']>([]);
+    const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields', {});
 
     const handleDelete = () => {
         Alert.alert(
@@ -110,6 +192,8 @@ export default function CredentialPage() {
                     onPress: async () => {
                         if (credential?.id) {
                             await storage.delete(credential.id);
+                            const updatedCredentials = credentials.filter((c) => c.id !== credential.id);
+                            setCredentials(updatedCredentials);
                             router.back();
                         }
                     }
@@ -117,6 +201,61 @@ export default function CredentialPage() {
             ]
         );
     };
+
+    const handleAddField = async () => {
+        const newField = {
+            id: `${Date.now()}`,
+            type: 'text',
+            value: ''
+        };
+        const updatedCredential = {
+            ...credential,
+            fields: [...fields, newField]
+        } as Credential;
+        await storage.update(credential!.id, updatedCredential);
+        setFields(updatedCredential.fields);
+        setCredentials(credentials.map(c => c.id === credential!.id ? updatedCredential : c));
+        setIsEditing(prev => ({ ...prev, [newField.id]: true }));
+    };
+    const handleLongPressField = (fieldId: string) => {
+        Alert.alert(
+            'Field Options',
+            'What would you like to do with this field?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Delete',
+                    style: 'destructive',
+                    onPress: async () => {
+                        const updatedCredential = {
+                            ...credential,
+                            fields: fields.filter(f => f.id !== fieldId)
+                        } as Credential;
+                        await storage.update(credential!.id, updatedCredential);
+                        setFields(updatedCredential.fields);
+                        setCredentials(credentials.map(c => c.id === credential!.id ? updatedCredential : c));
+                    }
+                }
+            ]
+        );
+    };
+
+    useEffect(() => {
+        async function getCredential() {
+            if (params.id) {
+                const newCredential = await storage.get(params.id);
+                if (newCredential != null) {
+                    setCredential(newCredential);
+                    setFields(newCredential.fields);
+                } else {
+                    router.back();
+                }
+            }
+        }
+        getCredential();
+    }, [params.id, isEditing]);
+
+
 
     if (!credential) {
         return (
@@ -154,18 +293,31 @@ export default function CredentialPage() {
             <ScrollView className="flex-1 p-4">
                 {/* Credential Fields */}
                 <View className="bg-white rounded-xl overflow-hidden border border-gray-100">
-                    {credential.fields.map((field, index) => (
-                        <CredentialField key={field.id} field={field} index={index} credential={credential} />
+                    {fields.map((field, index) => (
+                        <TouchableOpacity
+                            key={field.id}
+                            onLongPress={() => handleLongPressField(field.id)}
+                        >
+                            {
+                                isEditing[field.id] ? (
+                                    <EditingCredentialField key={field.id} field={field} index={index} credential={credential} />
+                                ) : (
+                                    <CredentialField key={field.id} field={field} index={index} credential={credential} />
+                                )
+                            }
+                        </TouchableOpacity>
                     ))}
                 </View>
 
-                {/* Edit Button */}
+                {/* Save Button */}
                 <TouchableOpacity
-                    className="mt-6 bg-blue-500 py-3 px-4 rounded-xl flex-row items-center justify-center"
-                    onPress={() => Alert.alert('Edit', 'Edit functionality coming soon!')}
+                    onPress={handleAddField}
+                    className="flex-row items-center justify-center py-3 mb-6"
                 >
-                    <Ionicons name="create-outline" size={20} color="white" />
-                    <Text className="text-white font-semibold ml-2">Edit Credential</Text>
+                    <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-2">
+                        <Ionicons name="add" size={20} color="#3B82F6" />
+                    </View>
+                    <Text className="text-blue-500 font-medium">Add another field</Text>
                 </TouchableOpacity>
 
                 {/* Metadata */}
