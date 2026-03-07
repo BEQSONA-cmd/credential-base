@@ -6,20 +6,16 @@ import { useStatic } from '../components/shared/useStatic';
 import { Credential } from '../types';
 import { Text, TextInput, Alert } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
-
 import { TouchableOpacity, FlatList } from 'react-native';
+import { useRouter } from 'expo-router';
 
 
 export function CredentialsList({ credentialList }: { credentialList: Credential[] }) {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
-    const [selectedId, setSelectedId] = useStatic<string | null>('selectedCredentialId');
-
-    const onSelect = (credential: Credential) => {
-        Alert.alert('Credential Details', `Name: ${credential.name}\nCreated: ${new Date(credential.createdAt).toLocaleDateString()}\nFields: ${credential.fields.length}`);
-    };
+    const router = useRouter();
 
     const onEdit = (credential: Credential) => {
-        setSelectedId(credential.id);
+        router.push(`/credential?id=${credential.id}`);
     };
     const onDelete = async (id: string) => {
         Alert.alert(
@@ -42,17 +38,16 @@ export function CredentialsList({ credentialList }: { credentialList: Credential
             'Manage Credential',
             `What would you like to do with "${credential.name}"?`,
             [
-                { text: 'View', onPress: () => onSelect(credential) },
+                { text: 'Cancel', style: 'cancel' },
                 { text: 'Edit', onPress: () => onEdit(credential) },
-                { text: 'Delete', onPress: () => onDelete(credential.id), style: 'destructive' },
-                { text: 'Cancel', style: 'cancel' }
+                { text: 'Delete', onPress: () => onDelete(credential.id), style: 'destructive' }
             ]
         );
     };
 
     const renderItem = ({ item }: { item: Credential }) => (
         <TouchableOpacity
-            onPress={() => onSelect(item)}
+            onPress={() => onEdit(item)}
             onLongPress={() => handleLongPress(item)}
             className="bg-white p-4 mb-2 rounded-lg shadow-sm border border-gray-200"
         >
@@ -86,7 +81,6 @@ export function CredentialsList({ credentialList }: { credentialList: Credential
 
 function AddCredentialModal() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
-    const [selectedId, setSelectedId] = useStatic<string | null>('selectedCredentialId', null);
     const [modalVisible, setModalVisible] = useStatic('addModalVisible', false);
     const [name, setName] = useState('');
     const [fields, setFields] = useState<Credential['fields']>([
@@ -110,16 +104,10 @@ function AddCredentialModal() {
                 createdAt: new Date(),
                 fields
             };
-            if (selectedId) {
-                await storage.update(selectedId, credential);
-                setCredentials(credentials.map(c => c.id === selectedId ? credential : c));
-            } else {
-                await storage.add(credential);
-                setCredentials([...credentials, credential]);
-            }
+            await storage.add(credential);
+            setCredentials([...credentials, credential]);
             setName('');
             setFields([]);
-            setSelectedId(null);
             setModalVisible(false);
         } else {
             Alert.alert('Error', 'Fill all fields');
@@ -127,19 +115,7 @@ function AddCredentialModal() {
     };
 
     useEffect(() => {
-        if (selectedId) {
-            const selectedCredential = credentials.find(c => c.id === selectedId);
-            if (selectedCredential) {
-                setName(selectedCredential.name);
-                setFields(selectedCredential.fields);
-                setModalVisible(true);
-            }
-        }
-    }, [selectedId]);
-
-    useEffect(() => {
         if (!modalVisible) {
-            setSelectedId(null);
             setName('');
             setFields([
                 { id: Date.now().toString(), value: '', type: 'email' },
@@ -192,7 +168,7 @@ function AddCredentialModal() {
 
 export default function HomePage() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials', []);
-    const [showOnboarding, setShowOnboarding] = useState(true);
+    const [showOnboarding, setShowOnboarding] = useState(false);
 
     const handleOnboardingContinue = async () => {
         setShowOnboarding(false);

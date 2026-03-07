@@ -69,6 +69,19 @@ class StorageService {
         }
     }
 
+    async get(id: string): Promise<Credential | null> {
+        try {
+            const credentials = await this.getAll();
+            return credentials.find(c => c.id === id) || null;
+        } catch (error) {
+            Alert.alert(
+                'Error',
+                'Failed to load credential. Please try again.'
+            );
+            return null;
+        }
+    }
+
     async save(credentials: Credential[]): Promise<boolean> {
         const available = await this.checkAvailability();
 
