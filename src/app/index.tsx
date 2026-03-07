@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, use } from 'react';
 import { View, Modal, Pressable } from 'react-native';
 import { storage } from '../utils/storage';
 import Onboarding from '../components/Onboarding';
@@ -12,13 +12,14 @@ import { TouchableOpacity, FlatList } from 'react-native';
 
 export function CredentialsList({ credentialList }: { credentialList: Credential[] }) {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
+    const [selectedId, setSelectedId] = useStatic<string | null>('selectedCredentialId');
 
     const onSelect = (credential: Credential) => {
         Alert.alert('Credential Details', `Name: ${credential.name}\nCreated: ${new Date(credential.createdAt).toLocaleDateString()}\nFields: ${credential.fields.length}`);
     };
 
     const onEdit = (credential: Credential) => {
-        Alert.alert('Edit Credential', `This would open the edit screen for "${credential.name}".`);
+        setSelectedId(credential.id);
     };
     const onDelete = async (id: string) => {
         Alert.alert(
@@ -85,6 +86,7 @@ export function CredentialsList({ credentialList }: { credentialList: Credential
 
 function AddCredentialModal() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials');
+    const [selectedId, setSelectedId] = useStatic<string | null>('selectedCredentialId', null);
     const [modalVisible, setModalVisible] = useStatic('addModalVisible', false);
     const [name, setName] = useState('');
     const [fields, setFields] = useState<Credential['fields']>([
@@ -108,15 +110,43 @@ function AddCredentialModal() {
                 createdAt: new Date(),
                 fields
             };
-            await storage.add(credential);
-            setCredentials([...credentials, credential]);
+            if (selectedId) {
+                await storage.update(selectedId, credential);
+                setCredentials(credentials.map(c => c.id === selectedId ? credential : c));
+            } else {
+                await storage.add(credential);
+                setCredentials([...credentials, credential]);
+            }
             setName('');
             setFields([]);
+            setSelectedId(null);
             setModalVisible(false);
         } else {
             Alert.alert('Error', 'Fill all fields');
         }
     };
+
+    useEffect(() => {
+        if (selectedId) {
+            const selectedCredential = credentials.find(c => c.id === selectedId);
+            if (selectedCredential) {
+                setName(selectedCredential.name);
+                setFields(selectedCredential.fields);
+                setModalVisible(true);
+            }
+        }
+    }, [selectedId]);
+
+    useEffect(() => {
+        if (!modalVisible) {
+            setSelectedId(null);
+            setName('');
+            setFields([
+                { id: Date.now().toString(), value: '', type: 'email' },
+                { id: (Date.now() + 1).toString(), value: '', type: 'password' }
+            ]);
+        }
+    }, [modalVisible]);
 
     return (
         <Modal visible={modalVisible} animationType="slide" onRequestClose={() => setModalVisible(false)}>
