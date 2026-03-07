@@ -10,6 +10,15 @@ function CredentialField({ field, index, credential }: { field: Credential['fiel
     const togglePassword = (fieldId: string) => {
         setShowPassword(prev => ({ ...prev, [fieldId]: !prev[fieldId] }));
     };
+
+    const handleCopy = (text: string) => {
+        Alert.alert('Copied!', `${field.type} copied to clipboard`);
+    };
+
+    const handleEdit = () => {
+        Alert.alert('Edit Field', 'Edit functionality coming soon!');
+    }
+
     const getIconName = (type: string) => {
         switch (type) {
             case 'email': return 'mail-outline';
@@ -27,9 +36,14 @@ function CredentialField({ field, index, credential }: { field: Credential['fiel
                 <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
                     <Ionicons name={getIconName(field.type)} size={16} color="#3B82F6" />
                 </View>
-                <Text className="text-sm font-medium text-gray-500 capitalize">
+                <Text className="text-sm font-medium text-gray-500 capitalize flex-1">
                     {field.type}
                 </Text>
+                <TouchableOpacity onPress={handleEdit}
+                    className="p-2"
+                >
+                    <Ionicons name="create-outline" size={20} color="#9CA3AF" />
+                </TouchableOpacity>
             </View>
 
             <View className="flex-row items-center ml-11">
@@ -52,11 +66,9 @@ function CredentialField({ field, index, credential }: { field: Credential['fiel
                             />
                         </TouchableOpacity>
                     )}
+
                     <TouchableOpacity
-                        onPress={() => {
-                            // Copy to clipboard functionality
-                            Alert.alert('Copied!', `${field.type} copied to clipboard`);
-                        }}
+                        onPress={() => handleCopy(field.value)}
                         className="p-2"
                     >
                         <Ionicons name="copy-outline" size={20} color="#9CA3AF" />
