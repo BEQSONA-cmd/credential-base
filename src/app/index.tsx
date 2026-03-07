@@ -6,10 +6,12 @@ import { useStatic } from '../components/shared/useStatic';
 import { Credential } from '../types';
 import AddCredentialModal from '../components/AddCredentialModal';
 import CredentialsList from '../components/CredentialsList';
+import { useTheme } from '../context/ThemeContext';
 
 export default function HomePage() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials', []);
-    const [showOnboarding, setShowOnboarding] = useState(false);
+    const [showOnboarding, setShowOnboarding] = useState(true);
+    const { isDark } = useTheme();
 
     const handleOnboardingContinue = async () => {
         setShowOnboarding(false);
@@ -25,7 +27,7 @@ export default function HomePage() {
     }, []);
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
             <Onboarding
                 visible={showOnboarding}
                 onContinue={handleOnboardingContinue}

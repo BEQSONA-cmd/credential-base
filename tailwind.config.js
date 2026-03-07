@@ -2,8 +2,17 @@
 module.exports = {
   content: ["./src/app/**/*.{js,jsx,ts,tsx}", "./src/components/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
-  theme: {
-    extend: {},
+theme: {
+    extend: {
+      colors: {
+        // You can define custom colors for dark mode here
+      }
+    },
   },
+  darkMode: 'class', // Enable class-based dark mode
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+
   plugins: [],
 };

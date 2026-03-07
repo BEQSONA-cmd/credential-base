@@ -4,6 +4,8 @@ import { Credential } from '../types';
 
 const STORAGE_KEY = 'passvault_credentials';
 const INIT_KEY = 'passvault_initialized';
+const THEME_KEY = '@theme';
+
 
 class StorageService {
     private isAvailable: boolean | null = null;
@@ -172,6 +174,24 @@ class StorageService {
                 ]
             );
         });
+    }
+
+    async saveTheme(theme: 'light' | 'dark'): Promise<void> {
+        try {
+            await AsyncStorage.setItem(THEME_KEY, theme);
+        } catch (error) {
+            console.error('Error saving theme:', error);
+        }
+    }
+
+    async getTheme(): Promise<'light' | 'dark' | null> {
+        try {
+            const theme = await AsyncStorage.getItem(THEME_KEY);
+            return theme as 'light' | 'dark' | null;
+        } catch (error) {
+            console.error('Error getting theme:', error);
+            return null;
+        }
     }
 }
 

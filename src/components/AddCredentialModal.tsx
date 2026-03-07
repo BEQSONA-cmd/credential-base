@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { storage } from '../utils/storage';
 import { useStatic } from './shared/useStatic';
 import { Credential } from '../types';
+import { useTheme } from '../context/ThemeContext';
 
 interface AddFieldProps {
     field: Credential['fields'][0];
@@ -13,6 +14,8 @@ interface AddFieldProps {
 }
 
 export function AddField({ field, updateField, removeField }: AddFieldProps) {
+    const { isDark } = useTheme();
+
     const getFieldIcon = (type: string) => {
         switch (type) {
             case 'email': return 'mail-outline';
@@ -20,10 +23,11 @@ export function AddField({ field, updateField, removeField }: AddFieldProps) {
             default: return 'document-text-outline';
         }
     };
+
     return (
-        <View key={field.id} className="mb-4 bg-white rounded-xl border border-gray-200 p-4">
+        <View key={field.id} className={`mb-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-4`}>
             <View className="flex-row items-center mb-3">
-                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
+                <View className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} items-center justify-center mr-3`}>
                     <Ionicons name={getFieldIcon(field.type)} size={16} color="#3B82F6" />
                 </View>
                 <View className="flex-1 flex-row">
@@ -33,12 +37,12 @@ export function AddField({ field, updateField, removeField }: AddFieldProps) {
                             onPress={() => updateField(field.id, 'type', type)}
                             className={`mr-2 px-3 py-1 rounded-full ${field.type === type
                                 ? 'bg-blue-500'
-                                : 'bg-gray-100'
+                                : isDark ? 'bg-gray-700' : 'bg-gray-100'
                                 }`}
                         >
                             <Text className={`text-xs capitalize ${field.type === type
                                 ? 'text-white'
-                                : 'text-gray-600'
+                                : isDark ? 'text-gray-300' : 'text-gray-600'
                                 }`}>
                                 {type}
                             </Text>
@@ -47,7 +51,7 @@ export function AddField({ field, updateField, removeField }: AddFieldProps) {
                 </View>
                 <TouchableOpacity
                     onPress={() => removeField(field.id)}
-                    className="w-8 h-8 items-center justify-center"
+                    className={`w-8 h-8 rounded-full items-center justify-center ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                 >
                     <Ionicons name="trash-outline" size={18} color="#EF4444" />
                 </TouchableOpacity>
@@ -58,8 +62,8 @@ export function AddField({ field, updateField, removeField }: AddFieldProps) {
                 value={field.value}
                 onChangeText={value => updateField(field.id, 'value', value)}
                 secureTextEntry={field.type === 'password'}
-                className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-base text-gray-800"
-                placeholderTextColor="#9CA3AF"
+                className={`${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'} border rounded-lg px-3 py-2 text-base`}
+                placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
             />
         </View>
     );
@@ -73,6 +77,7 @@ export default function AddCredentialModal() {
         { id: Date.now().toString(), value: '', type: 'email' },
         { id: (Date.now() + 1).toString(), value: '', type: 'password' }
     ]);
+    const { isDark } = useTheme();
 
     const handleAddField = () => {
         setFields([...fields, { id: Date.now().toString(), value: '', type: 'text' }]);
@@ -129,36 +134,38 @@ export default function AddCredentialModal() {
             onRequestClose={() => setModalVisible(false)}
             presentationStyle="pageSheet"
         >
-            <View className="flex-1 bg-gray-50">
+            <View className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
                 {/* Modal Header */}
-                <View className="bg-white px-6 py-4 border-b border-gray-100 flex-row justify-between items-center">
+                <View className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} px-6 py-4 border-b flex-row justify-between items-center`}>
                     <TouchableOpacity
                         onPress={() => setModalVisible(false)}
-                        className="w-10 h-10 items-center justify-center rounded-full bg-gray-100"
+                        className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                     >
-                        <Ionicons name="close" size={20} color="#374151" />
+                        <Ionicons name="close" size={20} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
-                    <Text className="text-lg font-semibold text-gray-800">New Credential</Text>
+                    <Text className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+                        New Credential
+                    </Text>
                     <View className="w-10" />
                 </View>
 
                 <ScrollView className="flex-1 p-6">
                     {/* Credential Name */}
                     <View className="mb-6">
-                        <Text className="text-sm font-medium text-gray-500 mb-2">
+                        <Text className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-2`}>
                             Credential Name
                         </Text>
                         <TextInput
                             placeholder="e.g., My Facebook Account"
                             value={name}
                             onChangeText={setName}
-                            className="bg-white border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-800"
-                            placeholderTextColor="#9CA3AF"
+                            className={`${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200 text-gray-800'} border rounded-xl px-4 py-3 text-base`}
+                            placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
                         />
                     </View>
 
                     {/* Fields */}
-                    <Text className="text-sm font-medium text-gray-500 mb-3">
+                    <Text className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'} mb-3`}>
                         Fields
                     </Text>
 
@@ -174,17 +181,17 @@ export default function AddCredentialModal() {
                     {/* Add Field Button */}
                     <TouchableOpacity
                         onPress={handleAddField}
-                        className="flex-row items-center justify-center py-3 mb-6"
+                        className={`mt-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl border p-4 flex-row items-center justify-center`}
                     >
-                        <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-2">
+                        <View className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} items-center justify-center mr-3`}>
                             <Ionicons name="add" size={20} color="#3B82F6" />
                         </View>
-                        <Text className="text-blue-500 font-medium">Add another field</Text>
+                        <Text className="text-blue-500 font-semibold">Add another field</Text>
                     </TouchableOpacity>
                 </ScrollView>
 
                 {/* Save Button */}
-                <View className="bg-white border-t border-gray-100 px-6 py-4">
+                <View className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-t px-6 py-4`}>
                     <TouchableOpacity
                         onPress={handleSave}
                         className="bg-blue-500 py-3 px-4 rounded-xl flex-row items-center justify-center"

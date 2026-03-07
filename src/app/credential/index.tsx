@@ -1,10 +1,12 @@
-import { Text, TouchableOpacity, View, ScrollView, Alert, TextInput } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, TextInput, Alert } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { storage } from '../../utils/storage';
 import { Credential } from '../../types';
 import { useStatic } from '../../components/shared/useStatic';
+import { useTheme } from '../../context/ThemeContext';
+import CustomAlert from '../../components/shared/CustomAlert';
 
 interface CredentialFieldProps {
     field: Credential['fields'][0];
@@ -17,6 +19,7 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
     const [value, setValue] = useState(field.value);
     const [selectedType, setSelectedType] = useState(field.type);
     const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields');
+    const { isDark } = useTheme();
 
     const handleSave = async () => {
         const updatedCredential = {
@@ -45,7 +48,7 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
     };
 
     return (
-        <View key={field.id} className="bg-white rounded-xl border border-gray-200 p-4">
+        <View key={field.id} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-4`}>
             <View className="flex-row items-center mb-3">
                 <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
                     <Ionicons name={getFieldIcon(selectedType)} size={16} color="#3B82F6" />
@@ -57,12 +60,12 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
                             onPress={() => setSelectedType(type)}
                             className={`mr-2 px-3 py-1 rounded-full ${selectedType === type
                                 ? 'bg-blue-500'
-                                : 'bg-gray-100'
+                                : isDark ? 'bg-gray-700' : 'bg-gray-100'
                                 }`}
                         >
                             <Text className={`text-xs capitalize ${selectedType === type
                                 ? 'text-white'
-                                : 'text-gray-600'
+                                : isDark ? 'text-gray-300' : 'text-gray-600'
                                 }`}>
                                 {type}
                             </Text>
@@ -83,8 +86,8 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
                     value={value}
                     onChangeText={setValue}
                     secureTextEntry={selectedType === 'password'}
-                    className="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-base text-gray-800"
-                    placeholderTextColor="#9CA3AF"
+                    className={`flex-1 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-gray-50 border-gray-200 text-gray-800'} border rounded-lg px-3 py-2 text-base`}
+                    placeholderTextColor={isDark ? "#6B7280" : "#9CA3AF"}
                 />
                 <TouchableOpacity
                     onPress={handleSave}
@@ -100,6 +103,8 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
 function CredentialField({ field, index, credential }: CredentialFieldProps) {
     const [showPassword, setShowPassword] = useState<{ [key: string]: boolean }>({});
     const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields');
+    const { isDark } = useTheme();
+
     const togglePassword = (fieldId: string) => {
         setShowPassword(prev => ({ ...prev, [fieldId]: !prev[fieldId] }));
     };
@@ -123,24 +128,24 @@ function CredentialField({ field, index, credential }: CredentialFieldProps) {
     return (
         <View
             key={field.id}
-            className={`p-4 ${index !== credential.fields.length - 1 ? 'border-b border-gray-100' : ''}`}
+            className={`p-4 ${index !== credential.fields.length - 1 ? `border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}` : ''}`}
         >
             <View className="flex-row items-center mb-2">
                 <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
                     <Ionicons name={getIconName(field.type)} size={16} color="#3B82F6" />
                 </View>
-                <Text className="text-sm font-medium text-gray-500 capitalize flex-1">
+                <Text className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'} capitalize flex-1`}>
                     {field.type}
                 </Text>
                 <TouchableOpacity onPress={handleEdit}
                     className="p-2"
                 >
-                    <Ionicons name="create-outline" size={20} color="#9CA3AF" />
+                    <Ionicons name="create-outline" size={20} color={isDark ? "#6B7280" : "#9CA3AF"} />
                 </TouchableOpacity>
             </View>
 
             <View className="flex-row items-center ml-11">
-                <Text className="flex-1 text-base text-gray-800">
+                <Text className={`flex-1 text-base ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     {field.type === 'password' && !showPassword[field.id]
                         ? '••••••••'
                         : field.value
@@ -155,7 +160,7 @@ function CredentialField({ field, index, credential }: CredentialFieldProps) {
                             <Ionicons
                                 name={showPassword[field.id] ? 'eye-off-outline' : 'eye-outline'}
                                 size={20}
-                                color="#9CA3AF"
+                                color={isDark ? "#6B7280" : "#9CA3AF"}
                             />
                         </TouchableOpacity>
                     )}
@@ -164,7 +169,7 @@ function CredentialField({ field, index, credential }: CredentialFieldProps) {
                         onPress={() => handleCopy(field.value)}
                         className="p-2"
                     >
-                        <Ionicons name="copy-outline" size={20} color="#9CA3AF" />
+                        <Ionicons name="copy-outline" size={20} color={isDark ? "#6B7280" : "#9CA3AF"} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -179,27 +184,23 @@ export default function CredentialPage() {
     const [credential, setCredential] = useState<Credential | null>(null);
     const [fields, setFields] = useState<Credential['fields']>([]);
     const [isEditing, setIsEditing] = useStatic<{ [key: string]: boolean }>('editingFields', {});
+    const { isDark } = useTheme();
+
+    // Alert states
+    const [deleteAlert, setDeleteAlert] = useState<{ visible: boolean }>({ visible: false });
+    const [fieldOptionsAlert, setFieldOptionsAlert] = useState<{ visible: boolean; fieldId?: string }>({ visible: false });
 
     const handleDelete = () => {
-        Alert.alert(
-            'Delete Credential',
-            'Are you sure you want to delete this credential?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        if (credential?.id) {
-                            await storage.delete(credential.id);
-                            const updatedCredentials = credentials.filter((c) => c.id !== credential.id);
-                            setCredentials(updatedCredentials);
-                            router.back();
-                        }
-                    }
-                }
-            ]
-        );
+        setDeleteAlert({ visible: true });
+    };
+
+    const confirmDelete = async () => {
+        if (credential?.id) {
+            await storage.delete(credential.id);
+            const updatedCredentials = credentials.filter((c) => c.id !== credential.id);
+            setCredentials(updatedCredentials);
+            router.back();
+        }
     };
 
     const handleAddField = async () => {
@@ -217,27 +218,20 @@ export default function CredentialPage() {
         setCredentials(credentials.map(c => c.id === credential!.id ? updatedCredential : c));
         setIsEditing(prev => ({ ...prev, [newField.id]: true }));
     };
+
     const handleLongPressField = (fieldId: string) => {
-        Alert.alert(
-            'Field Options',
-            'What would you like to do with this field?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        const updatedCredential = {
-                            ...credential,
-                            fields: fields.filter(f => f.id !== fieldId)
-                        } as Credential;
-                        await storage.update(credential!.id, updatedCredential);
-                        setFields(updatedCredential.fields);
-                        setCredentials(credentials.map(c => c.id === credential!.id ? updatedCredential : c));
-                    }
-                }
-            ]
-        );
+        setFieldOptionsAlert({ visible: true, fieldId });
+    };
+
+    const confirmDeleteField = async (fieldId: string) => {
+        const updatedCredential = {
+            ...credential,
+            fields: fields.filter(f => f.id !== fieldId)
+        } as Credential;
+        await storage.update(credential!.id, updatedCredential);
+        setFields(updatedCredential.fields);
+        setCredentials(credentials.map(c => c.id === credential!.id ? updatedCredential : c));
+        setFieldOptionsAlert({ visible: false });
     };
 
     useEffect(() => {
@@ -255,35 +249,35 @@ export default function CredentialPage() {
         getCredential();
     }, [params.id, isEditing]);
 
-
-
     if (!credential) {
         return (
-            <View className="flex-1 items-center justify-center bg-gray-50">
-                <View className="bg-white p-8 rounded-2xl shadow-sm">
-                    <Text className="text-base text-gray-400">Loading credential...</Text>
+            <View className={`flex-1 items-center justify-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+                <View className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-8 rounded-2xl shadow-sm`}>
+                    <Text className={`text-base ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                        Loading credential...
+                    </Text>
                 </View>
             </View>
         );
     }
 
     return (
-        <View className="flex-1 bg-gray-50">
+        <View className={`flex-1 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
             {/* Header */}
-            <View className="bg-white border-b border-gray-100">
+            <View className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} border-b`}>
                 <View className="flex-row items-center px-4 py-3">
                     <TouchableOpacity
                         onPress={() => router.back()}
-                        className="w-10 h-10 items-center justify-center rounded-full bg-gray-100"
+                        className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                     >
-                        <Ionicons name="arrow-back" size={20} color="#374151" />
+                        <Ionicons name="arrow-back" size={20} color={isDark ? "#9CA3AF" : "#374151"} />
                     </TouchableOpacity>
-                    <Text className="flex-1 text-lg font-semibold text-gray-800 ml-2" numberOfLines={1}>
+                    <Text className={`flex-1 text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-800'} ml-2`} numberOfLines={1}>
                         {credential.name}
                     </Text>
                     <TouchableOpacity
                         onPress={handleDelete}
-                        className="w-10 h-10 items-center justify-center rounded-full bg-red-50"
+                        className={`w-10 h-10 items-center justify-center rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                     >
                         <Ionicons name="trash-outline" size={18} color="#EF4444" />
                     </TouchableOpacity>
@@ -292,11 +286,12 @@ export default function CredentialPage() {
 
             <ScrollView className="flex-1 p-4">
                 {/* Credential Fields */}
-                <View className="bg-white rounded-xl overflow-hidden border border-gray-100">
+                <View className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl overflow-hidden border`}>
                     {fields.map((field, index) => (
                         <TouchableOpacity
                             key={field.id}
                             onLongPress={() => handleLongPressField(field.id)}
+                            activeOpacity={0.7}
                         >
                             {
                                 isEditing[field.id] ? (
@@ -309,27 +304,55 @@ export default function CredentialPage() {
                     ))}
                 </View>
 
-                {/* Save Button */}
+                {/* add Button */}
                 <TouchableOpacity
                     onPress={handleAddField}
-                    className="flex-row items-center justify-center py-3 mb-6"
+                    className={`mt-4 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl border p-4 flex-row items-center justify-center`}
                 >
-                    <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-2">
+                    <View className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} items-center justify-center mr-3`}>
                         <Ionicons name="add" size={20} color="#3B82F6" />
                     </View>
-                    <Text className="text-blue-500 font-medium">Add another field</Text>
+                    <Text className="text-blue-500 font-semibold">Add another field</Text>
                 </TouchableOpacity>
 
                 {/* Metadata */}
-                <View className="mt-4 mb-16 bg-white rounded-xl p-4 border border-gray-100">
-                    <Text className="text-xs text-gray-400">
+                <View className={`mt-4 mb-16 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-100'} rounded-xl p-4 border`}>
+                    <Text className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                         Created: {new Date(credential.createdAt).toLocaleDateString()}
                     </Text>
-                    <Text className="text-xs text-gray-400 mt-1">
+                    <Text className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'} mt-1`}>
                         ID: {credential.id.slice(0, 8)}...
                     </Text>
                 </View>
             </ScrollView>
+
+            {/* Delete Confirmation Alert */}
+            <CustomAlert
+                visible={deleteAlert.visible}
+                title="Delete Credential"
+                message="Are you sure you want to delete this credential?"
+                buttons={[
+                    { text: 'Cancel', style: 'cancel', onPress: () => setDeleteAlert({ visible: false }) },
+                    { text: 'Delete', style: 'destructive', onPress: confirmDelete }
+                ]}
+                onClose={() => setDeleteAlert({ visible: false })}
+            />
+
+            {/* Field Options Alert */}
+            <CustomAlert
+                visible={fieldOptionsAlert.visible}
+                title="Field Options"
+                message="What would you like to do with this field?"
+                buttons={[
+                    { text: 'Cancel', style: 'cancel', onPress: () => setFieldOptionsAlert({ visible: false }) },
+                    {
+                        text: 'Delete',
+                        style: 'destructive',
+                        onPress: () => fieldOptionsAlert.fieldId && confirmDeleteField(fieldOptionsAlert.fieldId)
+                    }
+                ]}
+                onClose={() => setFieldOptionsAlert({ visible: false })}
+            />
         </View>
     );
 }
