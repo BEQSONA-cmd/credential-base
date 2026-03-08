@@ -1,4 +1,4 @@
-import { Text, TouchableOpacity, View, ScrollView, TextInput, Alert } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, Alert, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
@@ -50,7 +50,7 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
     return (
         <View key={field.id} className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} rounded-xl border p-4`}>
             <View className="flex-row items-center mb-3">
-                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
+                <View className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} items-center justify-center mr-3`}>
                     <Ionicons name={getFieldIcon(selectedType)} size={16} color="#3B82F6" />
                 </View>
                 <View className="flex-1 flex-row">
@@ -74,7 +74,7 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
                 </View>
                 <TouchableOpacity
                     onPress={handleCancel}
-                    className="w-8 h-8 items-center justify-center"
+                    className={`w-8 h-8 items-center justify-center rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                 >
                     <Ionicons name="close-outline" size={18} color="#EF4444" />
                 </TouchableOpacity>
@@ -91,7 +91,7 @@ function EditingCredentialField({ field, index, credential }: CredentialFieldPro
                 />
                 <TouchableOpacity
                     onPress={handleSave}
-                    className="ml-3 w-8 h-8 items-center justify-center rounded-full bg-green-50"
+                    className={`ml-3 w-8 h-8 items-center justify-center rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}
                 >
                     <Ionicons name="checkmark-outline" size={20} color="#10B981" />
                 </TouchableOpacity>
@@ -131,7 +131,7 @@ function CredentialField({ field, index, credential }: CredentialFieldProps) {
             className={`p-4 ${index !== credential.fields.length - 1 ? `border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}` : ''}`}
         >
             <View className="flex-row items-center mb-2">
-                <View className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center mr-3">
+                <View className={`w-8 h-8 rounded-full ${isDark ? 'bg-gray-700' : 'bg-gray-100'} items-center justify-center mr-3`}>
                     <Ionicons name={getIconName(field.type)} size={16} color="#3B82F6" />
                 </View>
                 <Text className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'} capitalize flex-1`}>

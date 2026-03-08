@@ -10,7 +10,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export default function HomePage() {
     const [credentials, setCredentials] = useStatic<Credential[]>('credentials', []);
-    const [showOnboarding, setShowOnboarding] = useState(true);
+    const [showOnboarding, setShowOnboarding] = useState(false);
     const { isDark } = useTheme();
 
     const handleOnboardingContinue = async () => {

@@ -5,11 +5,10 @@ module.exports = {
 theme: {
     extend: {
       colors: {
-        // You can define custom colors for dark mode here
       }
     },
   },
-  darkMode: 'class', // Enable class-based dark mode
+  darkMode: 'class',
   future: {
     hoverOnlyWhenSupported: true,
   },

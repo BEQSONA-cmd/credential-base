@@ -10,7 +10,12 @@ export default function RootLayout() {
         <ThemeProvider>
             <SafeAreaProvider>
                 <Header />
-                <Stack screenOptions={{ headerShown: false }} />
+                <Stack screenOptions={
+                    {
+                        headerShown: false,
+                        animation: 'fade_from_bottom',
+                    }
+                } />
                 <Footer />
             </SafeAreaProvider>
         </ThemeProvider>

@@ -10,6 +10,6 @@
     },
     "plugins": ["expo-router"],
     "orientation": "portrait",
-    "scheme": "my-expo-app"
+    "scheme": "my-expo-app",
   }
 }
